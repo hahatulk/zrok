@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## v2.0.4
+
+FIX: The agent no longer deletes reserved shares from the controller during graceful shutdown or after an abnormal subordinate process exit. Previously, a `SIGTERM`/`SIGINT` (e.g., on system reboot) caused the agent to issue an unconditional `DeleteShare` against the controller for every active share, destroying the reservation for private shares created with `--share-token` and for public shares with reserved names. The reservation is now preserved unless the user explicitly released the share via `zrok2 agent release`, allowing the agent to reattach on the next start. (https://github.com/openziti/zrok/issues/1251)
+
+CHANGE: Resolved the outstanding `go vet` findings across `cmd/zrok2`, `drives/davClient`, and the pastebin SDK example. Signal-notification channels passed to `signal.Notify` are now buffered (size 1) so that signals delivered before the receiver is ready are not dropped, unkeyed `xml.Name`/`xml.StartElement` composite literals were converted to keyed form, and the `testCanary` enabler/public-proxy commands now `defer` their snapshot-streamer `context.CancelFunc` to avoid leaking the cancellation.
+
+CHANGE: Updated `ui` and `agent/agentUi` npm dependencies to current versions.
+
+## v2.0.3
+
+FIX: The Python SDK `ProxyShare` now rejects absolute proxy request paths before forwarding. This prevents a viewer from using an absolute URL path to make the proxy host request arbitrary internal or loopback services instead of the configured target.
+
+FIX: Updated Python SDK unit tests to patch `zrok2.*` modules instead of the legacy `zrok.*` package path, allowing the non-integration test suite to pass against the v2 Python package layout.
+
+FIX: The zrok2 Docker Compose self-hosting metrics service now defaults to `influxdb:2.8-alpine` instead of the floating `influxdb:2-alpine` tag to avoid upstream image regressions. Docker Compose integration test failures now also include compose service status, container health details, and focused InfluxDB logs for faster diagnosis.
+
+FIX: The `zrok2 copy` drive sync path now rejects unsafe WebDAV and zrok drive paths before writing to a local filesystem target. Local drive sync operations are root-confined to prevent attacker-controlled paths or symlinks from writing, removing, moving, or timestamping files outside the selected destination while still allowing symlinks that resolve within the destination tree.
+
+FIX: Frontends configured with `interstitial.user_agent_prefixes` no longer suppress the interstitial page for all requests. The prefix list is now correctly evaluated as an allow-list of User-Agents that should receive the page; if the list is empty all User-Agents receive it, matching the documented behavior.
+
+FIX: Updated `github.com/shoenig/go-m1cpu` to v0.2.1 to correct segmentation violation on M5 macos systems.
+
+## v2.0.2
+
+FIX: The `drive` backend mode WebDAV implementation now prevents symlink traversal outside the configured shared directory. `Stat`, `OpenFile`, `Mkdir`, `RemoveAll`, and `Rename` now reject symlinks that resolve outside the drive root while continuing to allow symlinks that resolve within that tree. This fixes GHSA-74m3-9qvm-rp9h.
+
 ## v2.0.1
 
 FEATURE: Added several new `admin` API endpoints for interfacing with additional management controls: finding limit classes by label, finding applied/applying/removing limit classes from accounts, getting/setting skip interstitial status for an account (https://github.com/openziti/zrok/issues/1210)
